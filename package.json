@@ -1,0 +1,26 @@
+{
+  "name": "ww1-game",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "npx tsc",
+    "start": "node ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "math": "^0.0.3",
+    "mongodb": "^6.3.0",
+    "mongoose": "^7.4.4",
+    "util": "^0.12.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.2",
+    "tsx": "^3.13.0"
+  }
+}
