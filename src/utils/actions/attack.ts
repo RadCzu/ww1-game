@@ -56,7 +56,7 @@ export async function attack(args: any[]): Promise<void> {
           if(region.attackerEntrenchment <= 0) {
             console.log("Attacking armies have been forced out of the region");
             attackingArmies.forEach((army)=> {
-              casulties(army, 0.01 * combat.winnerCavalry + 0.15);
+              casulties(army, 0.02 * combat.winnerCavalry + 0.3);
               moveAttackerArmy(army._id.toString(), undefined, true);
             });
           }

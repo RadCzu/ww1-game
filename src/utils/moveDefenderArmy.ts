@@ -29,7 +29,7 @@ async function moveDefenderArmy(armyId: string, newRegionId?: string, random?: b
     }
 
     //check weather the army owner is friends with any neighbouring regions
-    const alliances = await AllianceModel.find({ guildId: oldRegion.guildId, memberNationIds: { $in: [army.nationId] }});
+    const alliances = await AllianceModel.find({ guildId: oldRegion.guildId, memberNationIds: { $elemMatch: { $eq: army.nationId }}});
     const allianceMemberNationIds = alliances.map(alliance => alliance.memberNationIds).flat();
     const ownedNeighbouringRegions = await RegionModel.find({ nationId: { $in: allianceMemberNationIds }, guildId: oldRegion.guildId });
 
@@ -39,7 +39,7 @@ async function moveDefenderArmy(armyId: string, newRegionId?: string, random?: b
     }
     const randomRegionId = Math.floor(Math.random() * ownedNeighbouringRegions.length);
 
-    newRegion = await RegionModel.findById(randomRegionId);
+    newRegion = ownedNeighbouringRegions[randomRegionId - 1];
   } 
 
   if(!newRegion) {
@@ -74,7 +74,8 @@ async function moveDefenderArmy(armyId: string, newRegionId?: string, random?: b
 }
 
 async function moveAttackerArmy(armyId: string, newRegionId?: string, random?: boolean): Promise<boolean> {
-  let newRegion = await RegionModel.findById(newRegionId);
+
+  let newRegion = await RegionModel.findOne({_id: newRegionId});
 
   // Fetch the army from the database
   const army = await ArmyModel.findById(armyId);
@@ -93,23 +94,24 @@ async function moveAttackerArmy(armyId: string, newRegionId?: string, random?: b
 
   if(random) {
     const possibleEscapes = oldRegion.neighbours;
+
     if(!possibleEscapes || possibleEscapes.length === 0) {
       console.log(`Attacking army oblitterated in ${oldRegion.name} no possible escape`);
       return false;
     }
 
     //check weather the army owner is friends with any neighbouring regions
-    const alliances = await AllianceModel.find({ guildId: oldRegion.guildId, memberNationIds: { $in: [army.nationId] }});
+    const alliances = await AllianceModel.find({ guildId: oldRegion.guildId, memberNationIds: { $elemMatch: { $eq: army.nationId }}});
     const allianceMemberNationIds = alliances.map(alliance => alliance.memberNationIds).flat();
     const ownedNeighbouringRegions = await RegionModel.find({ nationId: { $in: allianceMemberNationIds }, guildId: oldRegion.guildId });
 
-    if(!`ownedNeighbouringRegions` || ownedNeighbouringRegions.length === 0) {
+    if(!ownedNeighbouringRegions || ownedNeighbouringRegions.length === 0) {
       console.log(`Attacking army oblitterated in ${oldRegion.name} due to no possible escape`);
       return false;
     }
-    const randomRegionId = Math.floor(Math.random() * ownedNeighbouringRegions.length);
 
-    newRegion = await RegionModel.findById(randomRegionId);
+    const randomRegionIndex = Math.floor(Math.random() * ownedNeighbouringRegions.length);
+    newRegion = ownedNeighbouringRegions[randomRegionIndex - 1];
   } 
 
   if(!newRegion) {
