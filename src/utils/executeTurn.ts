@@ -1,6 +1,8 @@
+import ArmyModel from "../models/Army";
 import CountryModel, { CountryType } from "../models/Country";
 import TurnCounterModel from "../models/Turn";
 import TurnLogModel, { TurnLogType } from "../models/TurnLog";
+import UnitModel from "../models/Unit";
 import * as actions from "../utils/actions/exports";
 import equipmentIncome from "./income/equipmentIncome";
 import taxIncome from "./income/taxIncome";
@@ -9,14 +11,29 @@ export async function executeTurn(guildId: string): Promise<void> {
   const turn = await TurnCounterModel.findOne({ guildId: guildId });
 
   if (turn) {
+
+
     const turnLogs = await TurnLogModel.find({ turn: turn.turn });
 
-    const countries = await CountryModel.find({gameId: turn._id.toString(), guildId: guildId});
+    console.log(`turn ${turn.turn}`);
 
-    for (const country of countries) {
+    const countries = await CountryModel.find({gameId: turn._id.toString(), guildId: guildId});
+    const cav: number[] = [];
+
+    for(const country of countries) {
+      cav.push(await getCountryCavCount(country));
+    }
+
+    const countryCavPairs = countries.map((country, index) => ({country, cavCount: cav[index] }));
+
+    countryCavPairs.sort((a, b) => b.cavCount - a.cavCount);
+
+    const sortedCountries = countryCavPairs.map(pair => pair.country);
+
+    for (const country of sortedCountries) {
       if(country._id !== undefined) {
-        taxIncome(country);
-        equipmentIncome(country);
+        await taxIncome(country);
+        await equipmentIncome(country);
       }
       if(country.actions < 14) {
         country.actions += 2;
@@ -47,7 +64,16 @@ export async function executeTurn(guildId: string): Promise<void> {
   }
 }
 
-export interface ActionArgs {
-  // Define all possible arguments as optional fields
-  name?: string;
+async function getCountryCavCount(country: CountryType): Promise<number> {
+  const armies = await ArmyModel.find({nationId: country._id});
+  let cav = 0;
+  for(const army of armies) {
+    const units = await UnitModel.find({ _id: {$in: army.units}});
+    for(const unit of units) {
+      if(unit.unitType === "CAVALRY") {
+        cav += 1;
+      }
+    }
+  }
+  return cav;
 }

@@ -19,6 +19,7 @@ const createRegion: CommandTemplate = {
     const population: number = interaction.options.get("population")?.value as number;
     const manpower: number = Math.floor(population * 0.15);
     const factories: number = interaction.options.get("factories")?.value as number;
+    const milfactories: number = interaction.options.get("milfactories")?.value as number;
     const taxes: number = interaction.options.get("taxes")?.value as number;
 
     // Create a new region object
@@ -28,6 +29,7 @@ const createRegion: CommandTemplate = {
       population: population,
       manpower: manpower,
       factories: factories,
+      milfactories: milfactories,
       taxes:  taxes,
       guildId: interaction.guild?.id,
     };
@@ -82,6 +84,12 @@ const createRegion: CommandTemplate = {
     {
       name: "factories",
       description: "The number of factories in the new region",
+      required: true,
+      type: ApplicationCommandOptionType.Integer,
+    },
+    {
+      name: "milfactories",
+      description: "The number of military factories in the new region",
       required: true,
       type: ApplicationCommandOptionType.Integer,
     },
