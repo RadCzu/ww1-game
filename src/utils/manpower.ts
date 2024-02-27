@@ -1,5 +1,6 @@
 import { ArmyType } from '../models/Army';
 import RegionModel, { RegionType } from '../models/Region';
+import UnitModel from '../models/Unit';
 
 async function calculateTotalManpower(countryId: string): Promise<number> {
   try {
@@ -91,30 +92,42 @@ async function calculateRegionManpower(regionId: string): Promise<number> {
 
 async function casulties(army: ArmyType, procent: number): Promise<void> {
   try {
+    console.log("casulties! " + procent + "%");
     // Calculate total manpower of the army owner
     const totalManpower = await calculateTotalManpower(army.nationId);
 
     // Calculate the limit for casualties
     const casualtyLimit = procent * 10000 * army.units.length;
 
+    console.log(`total manpower: ${totalManpower}`);
+    console.log(`casulty limit: ${casualtyLimit}`);
     // If the casualty limit exceeds the total manpower, adjust the limit
     if (casualtyLimit > totalManpower) {
       // Determine the number of units to remove
       const unitsToRemove = Math.ceil((casualtyLimit - totalManpower) / 10000);
+      console.log(`Oh no to little manpower, units to remove: ${unitsToRemove}`);
       
       // Remove random units from the army
       for (let i = 0; i < unitsToRemove; i++) {
         const randomIndex = Math.floor(Math.random() * army.units.length);
+        await UnitModel.findByIdAndDelete(army.units[randomIndex]);
         army.units.splice(randomIndex, 1);
+        console.log(`unit ${randomIndex} removed`);
       }
+
+      console.log(army);
+
+      const regions = await RegionModel.find({ nationId: army.nationId });
 
       // Distribute the removed manpower back to a random region owned by the nation
       for (let i = 0; i < unitsToRemove; i++) {
-        const regions = await RegionModel.find({ nationId: army.nationId });
-        
-        const randomRegion = shuffleArray(regions)[0];
-        if (randomRegion && randomRegion.manpower) {
+        const randomIndex = Math.floor(Math.random() * regions.length);
+        const randomRegion = regions[randomIndex];
+        console.log("random region:");
+        console.log(randomRegion);
+        if (randomRegion && randomRegion.manpower != undefined) {
           randomRegion.manpower += 10000;
+          randomRegion.population += 10000;
           await randomRegion.save();
         }
       }
@@ -122,6 +135,7 @@ async function casulties(army: ArmyType, procent: number): Promise<void> {
 
     // Call the killManpower function to apply casualties
     await killManpower(army.nationId, casualtyLimit);
+
   } catch (error) {
     console.error(`Error calculating casualties: ${error}`);
   }

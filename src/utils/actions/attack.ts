@@ -43,32 +43,44 @@ export async function attack(args: any[]): Promise<void> {
       } else {
         const combat = await landCombat(tempDefArmy, tempAttArmy, regionId, false);
         if(combat.attackerVictory) {
+          console.log("regional defenders made a successfull counterattack");
           //defenders win
           region.attackerEntrenchment -= 1;
           await region.save();
-          console.log(region.attackerEntrenchment);
-          attackingArmies.forEach((army)=> {
-            casulties(army, 0.01 * combat.winnerCavalry + 0.15);
-          });
-          defendingArmies.forEach((army)=> {
-            casulties(army, 0.1);
-          });
+
+          for (const army of attackingArmies) {
+            await casulties(army, 0.01 * combat.winnerCavalry + 0.10);
+            await army.save();
+          };
+          console.log("regional attackers took casulties");
+          for (const army of defendingArmies) {
+            await casulties(army, 0.1);
+            await army.save();
+          };
+          console.log("regional defenders took casulties");
           if(region.attackerEntrenchment <= 0) {
             console.log("Attacking armies have been forced out of the region");
-            attackingArmies.forEach((army)=> {
-              casulties(army, 0.02 * combat.winnerCavalry + 0.3);
-              moveAttackerArmy(army._id.toString(), undefined, true);
-            });
+            for (const army of attackingArmies) {
+              await casulties(army, 0.01 * combat.winnerCavalry + 0.15);
+              await moveAttackerArmy(army._id.toString(), undefined, true);
+              await army.save();
+            };
+            console.log("regional attackers took casulties retreating");
           }
           return;
         } else {
           // invaders win
-          attackingArmies.forEach((army)=> {
-            casulties(army, 0.5);
-          });
-          defendingArmies.forEach((army)=> {
-            casulties(army, 0.2 + combat.winnerCavalry * 0.01);
-          });
+          console.log("regional defenders made an unsuccesfull counterattack");
+          for (const army of attackingArmies) {
+            await casulties(army, 0.5);
+            await army.save();
+          };
+          console.log("regional attackers took casulties");
+          for (const army of defendingArmies) {
+            await casulties(army, 0.15 + combat.winnerCavalry * 0.01);
+            await army.save();
+          };
+          console.log("regional defenders took casulties");
           return;
         }
       }
@@ -80,44 +92,55 @@ export async function attack(args: any[]): Promise<void> {
           console.error("ERROR: conquest impossible due to 'no country'");
           return;
         }
-        setRegionOwner(region.name, country.name, country.guildId, country.userId, true, false);
+        await setRegionOwner(region.name, country.name, country.guildId, country.userId, true, false);
         return;
       } else {
         const combat = await landCombat(tempAttArmy, tempDefArmy, regionId, false);
         if(combat.attackerVictory) {
+          console.log("regional invaders made a successfull attack");
           //invaders win
           region.attackerEntrenchment += 1;
           await region.save();
-          console.log(region.attackerEntrenchment);
-          defendingArmies.forEach((army)=> {
-            casulties(army, 0.01 * combat.winnerCavalry + 0.15);
-          });
-          attackingArmies.forEach((army)=> {
-            casulties(army, 0.1);
-          });
+          for (const army of defendingArmies) {
+            await casulties(army, 0.01 * combat.winnerCavalry + 0.10);
+            await army.save();
+          };
+          console.log("regional defenders took casulties");
+          for (const army of attackingArmies) {
+            await casulties(army, 0.1);
+            await army.save();
+          };
+          console.log("regional attackers took casulties");
           if(region.entrenchment - region.attackerEntrenchment <= 0) {
             console.log("Defending armies have been forced out of the region");
-            defendingArmies.forEach(async (army)=> {
-              casulties(army, 0.01 * combat.winnerCavalry + 0.15);
-              moveDefenderArmy(army._id.toString(), undefined, true);
+            for (const army of defendingArmies) {
+              await casulties(army, 0.01 * combat.winnerCavalry + 0.10);
+              await moveDefenderArmy(army._id.toString(), undefined, true);
               const country = await CountryModel.findById(attackingArmies[0]._id);
               if(!country) {
                 console.error("ERROR: conquest impossible due to 'no country'");
                 return;
               }
-              setRegionOwner(region.name, country.name, country.guildId, country.userId, true, false);
-            });
+              await setRegionOwner(region.name, country.name, country.guildId, country.userId, true, false);
+              await army.save();
+            };
+            console.log("regional defenders took casulties retreating");
           }
           return;
         } else {
           // defenders win
-          defendingArmies.forEach((army)=> {
-            casulties(army, 0.5);
-          });
+          console.log("regional invaders made an unsuccessfull attack");
+          for (const army of defendingArmies) {
+            await casulties(army, 0.5);
+            await army.save();
+          };
+          console.log("regional defenders took casulties");
 
-          attackingArmies.forEach((army)=> {
-            casulties(army, 0.2 + combat.winnerCavalry * 0.01);
-          });
+          for (const army of attackingArmies) {
+            await casulties(army, 0.15 + combat.winnerCavalry * 0.01);
+            await army.save();
+          };
+          console.log("regional attackers took casulties");
           return;
         }
       }

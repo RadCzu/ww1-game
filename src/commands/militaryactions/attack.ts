@@ -126,7 +126,7 @@ const attack: CommandTemplate = {
     //action check  
     if(country.actions > 0) {
       country.actions -= 1;
-      country.save();
+      await country.save();
     } else {
       interaction.editReply(
         `Not enough actions`

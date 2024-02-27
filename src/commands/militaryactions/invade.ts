@@ -36,14 +36,18 @@ async function isArmySubjectToAction(armyId: string, guildId: string, nationId: 
   return false;  // This will be reached if no match is found
 };
 
-async function isRegionBeingInvaded(regionId: string, guildId: string, nationId: string, turn: number) {
+async function isRegionBeingInvaded(regionId: string, guildId: string, turn: number) {
   const existingLogs: TurnLogType[] = await TurnLogModel.find({
-    guildId,
-    nationId,
-    turn,
+    guildId: guildId,
+    turn: turn,
   }) as TurnLogType[];
 
+  console.log(existingLogs);
+
   return existingLogs.some((log) => {
+    console.log(regionId);
+    console.log(log.args);
+    console.log(log.args.includes(regionId));
     return log.action === "invade" 
     && log.args.includes(regionId);
   });
@@ -53,9 +57,9 @@ async function hasArmyInvadedRegionRecently(armyId: string, guildId: string, nat
 
   for (let currentturn = turn; currentturn >= turn - 2; currentturn--) {
       const existingLogs: TurnLogType[] = await TurnLogModel.find({
-          guildId,
-          nationId,
-          turn,
+          guildId: guildId,
+          nationId: nationId,
+          turn: currentturn,
       }) as TurnLogType[];
 
       const hasInvadedRegion: boolean = existingLogs.some((log) => {
@@ -196,10 +200,18 @@ const invade: CommandTemplate = {
       return;
     }
 
-    const invaded = await isRegionBeingInvaded(nextRegion._id?.toString() as string, interaction.guildId, country._id, turn.turn);
+    const invaded = await isRegionBeingInvaded(currentRegion._id?.toString() as string, interaction.guildId, turn.turn);
     if (invaded) {
       interaction.editReply(
         `${armyName} this army is already preparing to defend so it cannot attack`
+      );
+      return;
+    }
+
+    const nextInvaded = await isRegionBeingInvaded(nextRegion._id?.toString() as string, interaction.guildId, turn.turn);
+    if (nextInvaded) {
+      interaction.editReply(
+        `the region is already being invaded by someone else, we cannot strike now, its too late`
       );
       return;
     }

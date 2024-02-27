@@ -4,6 +4,8 @@ import RegionModel, { RegionType } from "../models/Region";
 
 
 async function moveDefenderArmy(armyId: string, newRegionId?: string, random?: boolean): Promise<boolean> {
+
+
   let newRegion = await RegionModel.findById(newRegionId);
 
   // Fetch the army from the database
@@ -41,6 +43,9 @@ async function moveDefenderArmy(armyId: string, newRegionId?: string, random?: b
 
     newRegion = ownedNeighbouringRegions[randomRegionId - 1];
   } 
+
+  console.log("new defender region:");
+  console.log(newRegion);
 
   if(!newRegion) {
     console.error(`REGION NOT FOUND`);

@@ -28,7 +28,7 @@ const createArmy: CommandTemplate = {
     if (!country) {
       const requiredPerms: PermissionsBitField = interaction.member?.permissions as PermissionsBitField;
       if (requiredPerms.has(PermissionFlagsBits.Administrator)) {
-      country = await CountryModel.findOne({ name: nationName, userId: interaction.user.id, guildId: interaction.guildId });
+      country = await CountryModel.findOne({ name: nationName, guildId: interaction.guildId });
       }
       
       if (!country) {

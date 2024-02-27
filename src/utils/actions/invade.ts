@@ -79,23 +79,31 @@ export async function invade(args: any[]): Promise<void> {
         //casulties:
 
         defendingArmies.map(async (army) => {
-          casulties(army, 0.01 * invasion.winnerCavalry + 0.15);
+          await casulties(army, 0.01 * invasion.winnerCavalry + 0.10);
         });
 
-        casulties(attackerArmy, 0.1);
+        await casulties(attackerArmy, 0.1);
         
         // Add excess entrenchment to the attacker
         if(!newRegion.attackerEntrenchment || newRegion.attackerEntrenchment < 3) {
-        newRegion.attackerEntrenchment = 3;
+          newRegion.attackerEntrenchment = 3;
         }
+
         if(newRegion.entrenchment) {
+          if(newRegion.entrenchment <= 3) {
+            newRegion.entrenchment += 3;
+          }  
           newRegion.entrenchment -= 1;
           if(newRegion.entrenchment - newRegion.attackerEntrenchment <= 0) {
-            defendingArmies.map(army => {
+            defendingArmies.map(async (army) => {
               if(army._id)
-              moveDefenderArmy(army._id.toString(), undefined, true);
+              await moveDefenderArmy(army._id.toString(), undefined, true);
             })
-            setRegionOwner(newRegion.name, country.name, country.guildId, country.userId, true, false);
+            await setRegionOwner(newRegion.name, country.name, country.guildId, country.userId, true, false);
+
+            newRegion.defendingArmies = newRegion.attackingArmies;
+            newRegion.attackingArmies = [];
+            newRegion.attackerEntrenchment = 0;
             // make the defender retreat;
           }
         }
@@ -111,10 +119,10 @@ export async function invade(args: any[]): Promise<void> {
 
         //casulties:
         defendingArmies.map(async (army) => {
-          casulties(army, 0.05);
+          await casulties(army, 0.05);
         });
 
-        casulties(attackerArmy, 0.01 * invasion.winnerCavalry + 0.2);
+        await casulties(attackerArmy, 0.01 * invasion.winnerCavalry + 0.15);
         await defendingArmies.forEach(army => army.save());
         await oldRegion.save();
         await attackerArmy.save();
@@ -122,7 +130,7 @@ export async function invade(args: any[]): Promise<void> {
         console.log(`Army ${attackerArmy.name} failed to invade ${newRegion.name}`);
       }
     } else {
-      setRegionOwner(newRegion.name, country.name, country.guildId, country.userId, true, false);
+     await setRegionOwner(newRegion.name, country.name, country.guildId, country.userId, true, false);
 
       newRegion.defendingArmies = [attackerArmy._id.toString()];
 
