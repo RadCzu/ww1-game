@@ -9,16 +9,26 @@ async function getRegionDescription(region: RegionType, detailed: boolean): Prom
     if(region.nationId) {
       const nation = await CountryModel.findById(region.nationId) as CountryType;
       
-      description += `- Owner: ${nation?.name}\n`;
+      description += `- Under control of: ${nation?.name}\n`;
     } else {
-      description += `- Owner: Independent region\n`;
+      description += `- Independent region\n`;
     }
+  }
+
+  if(region.milfactories === undefined || region.factories === undefined) {
+    console.error("missing region for describtion (factories)");
+    return description;
   }
   
   description += `- Terrain: ${region.terrain}\n`;
   description += `- Population: ${region.population}\n`;
   description += `- Manpower: ${region.manpower}\n`;
   description += `- Factories: ${region.factories}\n`;
+  if(detailed) {
+    description += `\t civilian: ${region.factories - region.milfactories}\n`;
+    description += `\t military: ${region.milfactories}\n`;
+    description += `- Resistance to occupiers: ${region.resistance}%\n`;
+  }
   description += `- Tax income: ${region.taxes}\n`;
 
   // Fetch and display defending armies

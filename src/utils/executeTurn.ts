@@ -31,15 +31,17 @@ export async function executeTurn(guildId: string): Promise<void> {
     const sortedCountries = countryCavPairs.map(pair => pair.country);
 
     for (const country of sortedCountries) {
-      if(country._id !== undefined) {
-        await taxIncome(country);
-        await equipmentIncome(country);
+      if(country.stability > 0) {
+        if(country._id !== undefined) {
+          await taxIncome(country);
+          await equipmentIncome(country);
+        }
+        if(country.actions < 14) {
+          country.actions += 2;
+        }
+        country.politicalPower += 10;
+        country.save();
       }
-      if(country.actions < 14) {
-        country.actions += 2;
-      }
-      country.politicalPower += 10;
-      country.save();
     }
 
     let promiseChain = Promise.resolve();
