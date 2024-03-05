@@ -40,6 +40,7 @@ export async function registerCommands(client: Client): Promise<void> {
       };
 
       if (existingCommand) {
+
         if (localCommandObject.deleted) {
           await applicationCommands.delete(existingCommand.id);
           console.log(`deleted command: ${name}`);

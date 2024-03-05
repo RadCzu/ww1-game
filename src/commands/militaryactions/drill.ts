@@ -12,7 +12,7 @@ import { equipmentCost } from "../../utils/equipment";
 
 const drill: CommandTemplate = {
   name: "drill",
-  description: "(instant) order an army to drill and practice for actual combat without taking any losses. Costs equipment.",
+  description: "(instant) army gets experience for equipment",
   callback: async (client, interaction) => {
     await interaction.deferReply();
 
@@ -75,21 +75,34 @@ const drill: CommandTemplate = {
     }
 
 
+    let eqloss = 0;
+
     for(const unit of units) {
-      country.equipment -= equipmentCost(unit);
-      unit.combatExperience += 1;
-      await unit.save();
+      eqloss += equipmentCost(unit);
+    }
+
+    if(country.equipment < eqloss) {
+      interaction.editReply(
+        `Not enough equipment`
+      );
+      return;
     }
 
     //action check  
     if(country.actions > 0) {
       country.actions -= 1;
+      country.equipment -= eqloss;
       await country.save();
     } else {
       interaction.editReply(
         `Not enough actions`
       );
       return;
+    }
+
+    for(const unit of units) {
+      unit.combatExperience += 1;
+      await unit.save();
     }
 
     interaction.editReply(

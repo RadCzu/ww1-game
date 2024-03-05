@@ -23,7 +23,7 @@ const client = new Client({
     console.log(stringUri);
     await mongoose.connect(stringUri, { keepAlive: true });
     console.log('Connected to DB.');
-
+    
     eventHandler(client);
     client.login(process.env.TOKEN);
     

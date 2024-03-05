@@ -6,7 +6,7 @@ import TurnCounterModel from "../../models/Turn";
 
 const buildindustry: CommandTemplate = {
   name: "propaganda",
-  description: "(instant) increases stability by 4 and resistance in a specific region by 5, costs 10 political power",
+  description: "costs 10 political power",
   callback: async (client, interaction) => {
 
     const PPcost = 10;

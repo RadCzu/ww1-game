@@ -89,10 +89,11 @@ const armyinfo: CommandTemplate = {
        const chunks = [];
        let currentChunk = "";
        for (const unitDetail of unitDetails) {
-         if ((currentChunk + unitDetail).length > 2000) {
+         if ((currentChunk + unitDetail).length > 1998) {
            chunks.push(currentChunk);
            currentChunk = unitDetail;
          } else {
+           currentChunk += "\n";
            currentChunk += unitDetail;
          }
        }
