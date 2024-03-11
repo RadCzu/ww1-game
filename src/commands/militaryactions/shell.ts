@@ -52,10 +52,8 @@ const shell: CommandTemplate = {
       return;
     }
 
-    const units = await UnitModel.find({id: {$in: army.units}});
+    const units = await UnitModel.find({ _id: {$in: army.units}});
     let artillery = 0;
-    console.log("units:");
-    console.log(units);
     for(const unit of units) {
       if(unit.unitType === "ARTILLERY") {
         artillery +=1;
@@ -150,9 +148,9 @@ const shell: CommandTemplate = {
 };
 
 function rollDestruction(): boolean {
-  const rand = Math.random() * 100;
+  const rand = Math.floor(Math.random() * 100);
   console.log(rand);
-  if(rand >= 0) {
+  if(rand <= 2) {
     return true;
   } else {
     return false;

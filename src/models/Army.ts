@@ -33,10 +33,9 @@ const armySchema = new Schema({
     required: false,
   },
   units: {
-    type: Array,
+    type: [String],
     required: true,
   },
-
 })
 
 const ArmyModel = model<ArmyType & Document>('Army', armySchema);

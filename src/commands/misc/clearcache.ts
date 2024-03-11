@@ -28,7 +28,7 @@ const ping: CommandTemplate = {
       );
 
       if (existingCommand) {
-        console.log("delet");
+        console.log(`delete ${existingCommand.name}`);
         if(existingCommand.name !== interaction.command?.name){
           await applicationCommands.delete(existingCommand.id);
         }

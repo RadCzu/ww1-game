@@ -86,19 +86,20 @@ const createArmy: CommandTemplate = {
       units: [],
     };
 
-    const army = new ArmyModel(newArmy);
-    const units: UnitType[] = await createUnits(newArmy, army._id.toString(), 1, unitType);
+    const army = await ArmyModel.create(newArmy);
+    const units: UnitType[] = await createUnits(army, army._id.toString(), 1, unitType);
 
     if(units.length > 0) {
 
-      const editedUnit = await UnitModel.findOne({armyId: army._id});
+      const editedUnit = await UnitModel.findOne({armyId: army._id.toString()});
      
       if(!editedUnit) {
         interaction.editReply(`Something went wrong`);
         return;
       }
+
       editedUnit.name = unitName;
-      army.units = [editedUnit?._id.toString()];
+      army.units.push(editedUnit?._id.toString());
 
       // Save the new army to the database
       region.defendingArmies?.push(army._id.toString());

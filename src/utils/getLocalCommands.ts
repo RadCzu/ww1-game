@@ -23,6 +23,7 @@ export async function getLocalCommands(exceptions: string[] = []): Promise<Appli
     }
     
   }
+
   localCommands = localCommands.map(command => {
     if (command.default) {
       return command.default;

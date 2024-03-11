@@ -134,6 +134,11 @@ async function moveAttackerArmy(armyId: string, newRegionId?: string, random?: b
   }
 
   oldRegion.attackingArmies = oldRegion.attackingArmies.filter((a) => a !== armyId);
+
+  if(oldRegion.attackingArmies.length <= 0) {
+    oldRegion.attackerEntrenchment = 0;
+  }
+
   await oldRegion.save();
 
   // Add the army to the new region's defending armies list

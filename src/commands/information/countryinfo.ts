@@ -44,6 +44,7 @@ const countryinfo: CommandTemplate = {
       - Political Power: ${country.politicalPower}
       - Technology Level: ${country.tech}
       - Money: ${country.money}$\n
+      - Equipment: ${country.equipment}\n
       **Regions:**
     `;
 
