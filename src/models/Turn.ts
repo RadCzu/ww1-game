@@ -5,6 +5,7 @@ interface TurnCounterType {
   guildId: string;
   turn: number;
   announcementChannelId: string;
+  allianceCategoryId: string;
 }
 
 const turnCounterScheema = new Schema({
@@ -17,6 +18,10 @@ const turnCounterScheema = new Schema({
     required: true,
   },
   announcementChannelId: {
+    type: String,
+    required: true,
+  },
+  allianceCategoryId: {
     type: String,
     required: true,
   },

@@ -45,16 +45,6 @@ const register: CommandTemplate = {
       name: nationName,
     }) as Role;
 
-    const alliance: AllianceType = {
-      name: nationName,
-      guildId: interaction.guildId,
-      roleId: countryRole.id,
-      memberNationIds: [country._id.toString()],
-    }
-
-    // Create an alliance for the role
-    await AllianceModel.create(alliance);
-
     const spyRole = await interaction.guild?.roles.create({
       name: `${nationName} spy`,
     }) as Role;
@@ -71,9 +61,11 @@ const register: CommandTemplate = {
         type: ChannelType.GuildCategory, 
       }
     );
+
+
     
     // Create an input channel with viewing allowed only for the roles
-    await interaction.guild?.channels.create(
+    const inputChannel = await interaction.guild?.channels.create(
       { 
         name: `${nationName}`, 
         type: ChannelType.GuildText,
@@ -104,6 +96,22 @@ const register: CommandTemplate = {
         ],
       }
     );
+
+    if(!inputChannel) {
+      await interaction.editReply(`Error creating a new channel`);
+      return;
+    }
+
+    const alliance: AllianceType = {
+      name: nationName,
+      guildId: interaction.guildId,
+      roleId: countryRole.id,
+      channelId: inputChannel.id,
+      memberNationIds: [country._id.toString()],
+    }
+
+    // Create an alliance for the role
+    await AllianceModel.create(alliance);
 
     await interaction.editReply(`Country ${nationName} registered successfully!`);
   },

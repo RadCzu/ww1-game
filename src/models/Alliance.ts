@@ -5,6 +5,7 @@ interface AllianceType {
   name: string;
   guildId: string;
   roleId: string;
+  channelId: string;
   memberNationIds: string[];
 }
 
@@ -18,6 +19,10 @@ const allianceSchema = new Schema({
     required: true,
   },
   roleId: {
+    type: String,
+    required: true,
+  },
+  channelId: {
     type: String,
     required: true,
   },

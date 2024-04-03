@@ -5,9 +5,10 @@ import RegionModel, { RegionType } from "../../models/Region";
 import ArmyModel from "../../models/Army";
 import UnitModel from "../../models/Unit";
 import { casulties } from "../../utils/manpower";
+import CommanderModel from "../../models/Commander";
 
-const dismissunit: CommandTemplate = {
-  name: "dismissunit",
+const disbandarmy: CommandTemplate = {
+  name: "disbandarmy",
   description: "deals damadge to the enemy in your region",
   callback: async (client, interaction) => {
     await interaction.deferReply();
@@ -15,7 +16,6 @@ const dismissunit: CommandTemplate = {
     // Get details from command options
     const nationName: string = interaction.options.get("nation-name")?.value as string;
     const armyName: string = interaction.options.get("army-name")?.value as string;
-    const index: number = interaction.options.get("unit-index")?.value as number - 1;
 
     // Fetch country from the database
     let country = await CountryModel.findOne({ name: nationName, userId: interaction.user.id, guildId: interaction.guildId });
@@ -39,18 +39,17 @@ const dismissunit: CommandTemplate = {
       return;
     }
 
-    if(!army.units[index]) {
-      interaction.editReply(`A unit with this index does not exist`);
-      return;
+    await casulties(army, -1);
+
+    for(const unitid of army.units) {
+      await UnitModel.findByIdAndDelete(unitid);
+      country.equipment += 1;
     }
 
-    const unit = await UnitModel.findByIdAndDelete(army.units[index]);
-
-    army.units.splice(index, 1);
-
-    army.save();
+    await army.deleteOne();
+    await country.save();
     
-    interaction.editReply(`Unit '${unit?.name}' dismissed`);
+    interaction.editReply(`Army ${army.name} has been disbanded`);
   },
   options: [
     {
@@ -65,13 +64,7 @@ const dismissunit: CommandTemplate = {
       required: true,
       type: ApplicationCommandOptionType.String,
     },
-    {
-      name: "unit-index",
-      description: "index of the unit within the army",
-      required: true,
-      type: ApplicationCommandOptionType.Number,
-    },
   ],
 };
 
-export default dismissunit;
+export default disbandarmy;

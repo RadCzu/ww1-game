@@ -5,10 +5,11 @@ import RegionModel, { RegionType } from "../../models/Region";
 import ArmyModel from "../../models/Army";
 import UnitModel from "../../models/Unit";
 import { casulties } from "../../utils/manpower";
+import { isNullOrUndefined } from "util";
 
-const dismissunit: CommandTemplate = {
-  name: "dismissunit",
-  description: "deals damadge to the enemy in your region",
+const renameunit: CommandTemplate = {
+  name: "renameunit",
+  description: "renames a unit",
   callback: async (client, interaction) => {
     await interaction.deferReply();
 
@@ -16,6 +17,7 @@ const dismissunit: CommandTemplate = {
     const nationName: string = interaction.options.get("nation-name")?.value as string;
     const armyName: string = interaction.options.get("army-name")?.value as string;
     const index: number = interaction.options.get("unit-index")?.value as number - 1;
+    const unitName: string = interaction.options.get("new-name")?.value as string;
 
     // Fetch country from the database
     let country = await CountryModel.findOne({ name: nationName, userId: interaction.user.id, guildId: interaction.guildId });
@@ -44,13 +46,18 @@ const dismissunit: CommandTemplate = {
       return;
     }
 
-    const unit = await UnitModel.findByIdAndDelete(army.units[index]);
+    const unit = await UnitModel.findById(army.units[index]);
 
-    army.units.splice(index, 1);
+    if(unit === undefined || unit === null) {
+      interaction.editReply(`Unit missing`);
+      return;
+    }
 
-    army.save();
+    unit.name = unitName;
+
+    await unit.save();
     
-    interaction.editReply(`Unit '${unit?.name}' dismissed`);
+    interaction.editReply(`Unit ${index} of army ${army.name} is now known as: '${unit.name}' `);
   },
   options: [
     {
@@ -71,7 +78,13 @@ const dismissunit: CommandTemplate = {
       required: true,
       type: ApplicationCommandOptionType.Number,
     },
+    {
+      name: "new-name",
+      description: "new name of the unit",
+      required: true,
+      type: ApplicationCommandOptionType.String,
+    },
   ],
 };
 
-export default dismissunit;
+export default renameunit;

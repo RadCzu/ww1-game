@@ -5,10 +5,11 @@ import TurnLogModel, { TurnLogType } from "../../models/TurnLog";
 import TurnCounterModel from "../../models/Turn";
 import ArmyModel, { ArmyType } from "../../models/Army";
 import { calculateTotalManpower, killManpower } from "../../utils/manpower";
+import { mobilise as mobil } from "../../utils/actions/mobilise";
 
-const mobilise: CommandTemplate = {
-  name: "mobilise",
-  description: "mobilise units for an army",
+const recruit: CommandTemplate = {
+  name: "recruit",
+  description: "recruit up to 3 units for an army",
   callback: async (client, interaction) => {
     await interaction.deferReply();
 
@@ -60,17 +61,17 @@ const mobilise: CommandTemplate = {
       name: armyName,
     }) as ArmyType;
 
-    if(!army) {
+    if(!army || !army._id) {
       interaction.editReply(
         `${armyName} does not exist, check for potential typos and case differences`
       );
       return;
     }
 
-    const infantryAmount: number = interaction.options.get("infantry")?.value as number;
-    const cavalryAmount: number = interaction.options.get("cavalry")?.value as number;
-    const artilleryAmount: number = interaction.options.get("artillery")?.value as number;
-    const tankAmount: number = interaction.options.get("tanks")?.value as number;
+    const infantryAmount: number = interaction.options.get("infantry")?.value as number || 0;
+    const cavalryAmount: number = interaction.options.get("cavalry")?.value as number || 0;
+    const artilleryAmount: number = interaction.options.get("artillery")?.value as number || 0;
+    const tankAmount: number = interaction.options.get("tanks")?.value as number || 0;
 
     if(tankAmount > 0 && country.tech < 3.0) {
       interaction.editReply(
@@ -111,10 +112,14 @@ const mobilise: CommandTemplate = {
       return;
     }
 
-    const countryManpower = await calculateTotalManpower(country._id);
-    console.log(countryManpower);
-    console.log(totalUnitCount);
+    if(totalUnitCount > 3) {
+      interaction.editReply(
+        `Cannot recruit more than 3 units, try /mobilise instead`
+      );
+      return;
+    }
 
+    const countryManpower = await calculateTotalManpower(country._id);
 
     if(totalUnitCount * 10000 > countryManpower) {
       interaction.editReply(
@@ -148,32 +153,16 @@ const mobilise: CommandTemplate = {
       return;
     }
 
-    const newAction: TurnLogType = {
-      guildId: interaction.guildId,
-      nationId: country._id.toString(),
-      turn: turn.turn,
-      action: 'mobilise',
-      args: [army._id, infantryAmount ?? 0, cavalryAmount ?? 0, artilleryAmount ?? 0, tankAmount ?? 0],
-    };
-
-    TurnLogModel.create(newAction);
-
     country.money -= totalCost;
     await killManpower(country._id, totalUnitCount * 10000);
     country.equipment -= totalEquipment;
     await country.save();
+    const args: string[] = [army._id?.toString(), infantryAmount.toString(), cavalryAmount.toString(), artilleryAmount.toString(), tankAmount.toString()];
+    await mobil(args);
 
     interaction.editReply(
-      `Order 'mobilise ${totalUnitCount} units to ${armyName}' was accepted, you now have ${country.actions} actions left`
+      `Order 'recruit ${totalUnitCount} units to ${armyName}' was accepted, you now have ${country.actions} actions left`
     );
-
-    if (turn?.announcementChannelId) {
-      const announcementChannel = interaction.guild?.channels.cache.get(turn.announcementChannelId);
-      if (announcementChannel?.isTextBased()) {
-        const textBasedChannel = announcementChannel as TextBasedChannel;
-        await textBasedChannel.send(`${countryName} is mobilising its troops!`);
-      }
-    }
 
   },
   options: [
@@ -216,4 +205,4 @@ const mobilise: CommandTemplate = {
   ]
 };
 
-export default mobilise;
+export default recruit;
