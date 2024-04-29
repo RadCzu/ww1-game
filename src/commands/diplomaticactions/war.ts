@@ -2,22 +2,21 @@ import { ActionRow, ApplicationCommandOptionType, GuildBasedChannel, PermissionF
 import { CommandTemplate } from "../../models/Command";
 import TurnCounterModel, { TurnCounterType } from "../../models/Turn";
 import CountryModel, { CountryType } from "../../models/Country";
-import WarModel from "../../models/War";
+import WarModel, { WarType } from "../../models/War";
 import AllianceModel, { AllianceType } from "../../models/Alliance";
 import { addInteractionData } from "../../models/InteractionData";
 import { allianceExists, areAllied, areAtWar } from "../../utils/diplomacy";
 const { ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 
-const ally: CommandTemplate = {
-  name: "ally",
-  description: "Send an alliance offer to another player",
+const war: CommandTemplate = {
+  name: "war",
+  description: "Send an war declaration to another player",
   callback: async (client, interaction) => {
     await interaction.deferReply();
     
     const userID = interaction.user.id;
     const nationName: string = interaction.options.get("nation-name")?.value as string;
     const otherNationName: string = interaction.options.get("other-nation-name")?.value as string;
-    const allianceName: string = interaction.options.get("alliance-name")?.value as string;
 
     const turn = await TurnCounterModel.findOne({guildId: interaction.guildId});
 
@@ -27,7 +26,6 @@ const ally: CommandTemplate = {
       );
       return;
     }
-
 
     if(!interaction.guildId) {
       interaction.editReply(
@@ -61,7 +59,7 @@ const ally: CommandTemplate = {
       return;
     }
 
-    if (country.politicalPower < 5) {
+    if (country.politicalPower < 10) {
       interaction.editReply(
         `Not enough political power`
       );
@@ -77,70 +75,65 @@ const ally: CommandTemplate = {
 
     if(await areAtWar(country, otherCountry)) {
       interaction.editReply(
-        `Sorry, but you are at war with them`
+        `Sorry, but you are already at war with them`
       );
       return;
     }
 
     if(await areAllied(country, otherCountry, interaction.guildId)) {
       interaction.editReply(
-        `You are already allied`
+        `You are allied, you cannot declare war on them`
       );
       return;
     }
 
-    if(await allianceExists(interaction.guildId, allianceName)) {
-      interaction.editReply(
-        `Someone already formed an alliance of this name`
-      );
-      return;
-    }
-
-    // Create the buttons
-    const acceptButton = new ButtonBuilder()
-        .setCustomId(`acceptAlliance${interaction.id}`)
-        .setLabel('🕊️ Accept')
-        .setStyle(ButtonStyle.Success);
-
-    const declineButton = new ButtonBuilder()
-        .setCustomId(`declineAlliance${interaction.id}`)
-        .setLabel('Decline')
-        .setStyle(ButtonStyle.Danger);
-
-    // Create the action row containing the buttons
-    const actionRow = new ActionRowBuilder()
-        .addComponents(acceptButton, declineButton);
-
-    // Build the attachment with buttons
-    const attachment = {
-        content: `${nationName} offers you an alliance, which shall be known as '${allianceName}'`,
-        components: [actionRow]
-    };
-
-    const otherCountryChannel = interaction.guild?.channels.cache.find(channel => channel.name === `${otherCountry.name.toLowerCase()}`);
-    if (otherCountryChannel?.isTextBased()) {
-      const textBasedChannel = otherCountryChannel as TextBasedChannel;
-      const message = await textBasedChannel.send(attachment);
-
-      const interactionArgs = {
-        countryId: country._id,
-        otherCountryId: otherCountry._id,
-        guildId: interaction.guildId,
-        turn: turn.turn,
-        allianceName: allianceName,
+    //action check  
+    if(country.actions > 0) {
+      const otherCountryChannel = interaction.guild?.channels.cache.find(channel => channel.name === `${otherCountry.name.toLowerCase()}`);
+      if (otherCountryChannel?.isTextBased()) {
+        const textBasedChannel = otherCountryChannel as TextBasedChannel;
+        const otherCountryMember = await interaction.guild?.members.fetch(otherCountry.userId);
+        if (otherCountryMember) {
+          await textBasedChannel.send(`${otherCountryMember}, ${country.name} has declared war on you, prepare your defences!`);
+        } else {
+          await textBasedChannel.send(`${country.name} has declared war on you!`);
+        }
+      } else if (!otherCountryChannel){
+        interaction.editReply(`cannot find the correct message channel`);
+        return;
       }
-  
-      addInteractionData({identifier: interaction.id, data: interactionArgs});
-    } else if (!otherCountryChannel){
-      interaction.editReply(`cannot find the correct message channel`);
+      country.actions -= 1;
+      country.politicalPower -= 10;
+      await country.save();
+    } else {
+      interaction.editReply(
+        `Not enough actions`
+      );
       return;
     }
 
-    //pp cost
-    country.politicalPower -= 5;
-    await country.save();
+    let warModel = await WarModel.findOne({ $or: [
+      { defenderId: country._id?.toString(), attackerId: otherCountry._id?.toString() }, 
+      { defenderId: otherCountry._id?.toString(), attackerId: country._id?.toString() }
+    ]});
 
-    interaction.editReply(`proposition sent!`);
+    if(!warModel) {
+      const newWar: WarType = {
+        attackerId: country.id,
+        defenderId: otherCountry.id,
+        winrate: 0.5,
+        ongoing: true,
+        attackerWins: 0,
+        defenderWins: 0
+      }
+      warModel = await WarModel.create(newWar);
+    }
+
+    warModel.ongoing = true;
+
+    await warModel.save();
+
+    interaction.editReply(`War declared!`);
     return;
   },
   options: [
@@ -156,13 +149,7 @@ const ally: CommandTemplate = {
       description: "Nation you want to ally",
       type: ApplicationCommandOptionType.String,
     },
-    {
-      name: "alliance-name",
-      required: true,
-      description: "Name of this new alliance",
-      type: ApplicationCommandOptionType.String,
-    },
   ]
 };
 
-export default ally;
+export default war;

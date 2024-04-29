@@ -8,16 +8,15 @@ import { addInteractionData } from "../../models/InteractionData";
 import { allianceExists, areAllied, areAtWar } from "../../utils/diplomacy";
 const { ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 
-const ally: CommandTemplate = {
-  name: "ally",
-  description: "Send an alliance offer to another player",
+const peace: CommandTemplate = {
+  name: "peace",
+  description: "Send a peace offer to another player",
   callback: async (client, interaction) => {
     await interaction.deferReply();
     
     const userID = interaction.user.id;
     const nationName: string = interaction.options.get("nation-name")?.value as string;
     const otherNationName: string = interaction.options.get("other-nation-name")?.value as string;
-    const allianceName: string = interaction.options.get("alliance-name")?.value as string;
 
     const turn = await TurnCounterModel.findOne({guildId: interaction.guildId});
 
@@ -61,7 +60,7 @@ const ally: CommandTemplate = {
       return;
     }
 
-    if (country.politicalPower < 5) {
+    if (country.politicalPower < 10) {
       interaction.editReply(
         `Not enough political power`
       );
@@ -75,36 +74,29 @@ const ally: CommandTemplate = {
       return;
     }
 
-    if(await areAtWar(country, otherCountry)) {
+    if(!await areAtWar(country, otherCountry)) {
       interaction.editReply(
-        `Sorry, but you are at war with them`
+        `Sorry, but you are not at war with them`
       );
       return;
     }
 
     if(await areAllied(country, otherCountry, interaction.guildId)) {
       interaction.editReply(
-        `You are already allied`
-      );
-      return;
-    }
-
-    if(await allianceExists(interaction.guildId, allianceName)) {
-      interaction.editReply(
-        `Someone already formed an alliance of this name`
+        `You are allied!?`
       );
       return;
     }
 
     // Create the buttons
     const acceptButton = new ButtonBuilder()
-        .setCustomId(`acceptAlliance${interaction.id}`)
+        .setCustomId(`acceptPeace${interaction.id}`)
         .setLabel('🕊️ Accept')
         .setStyle(ButtonStyle.Success);
 
     const declineButton = new ButtonBuilder()
-        .setCustomId(`declineAlliance${interaction.id}`)
-        .setLabel('Decline')
+        .setCustomId(`declinePeace${interaction.id}`)
+        .setLabel('⚔️ Decline')
         .setStyle(ButtonStyle.Danger);
 
     // Create the action row containing the buttons
@@ -113,21 +105,26 @@ const ally: CommandTemplate = {
 
     // Build the attachment with buttons
     const attachment = {
-        content: `${nationName} offers you an alliance, which shall be known as '${allianceName}'`,
+        content: `${nationName} sends a peace offer`,
         components: [actionRow]
     };
 
     const otherCountryChannel = interaction.guild?.channels.cache.find(channel => channel.name === `${otherCountry.name.toLowerCase()}`);
     if (otherCountryChannel?.isTextBased()) {
       const textBasedChannel = otherCountryChannel as TextBasedChannel;
+      
+      const otherCountryMember = await interaction.guild?.members.fetch(otherCountry.userId);
+      if (otherCountryMember) {
+        attachment.content = `${otherCountryMember}, ${country.name} sends a peace offer`
+      } else {
+        attachment.content = `${country.name} sends a peace offer`
+      }
       const message = await textBasedChannel.send(attachment);
-
       const interactionArgs = {
         countryId: country._id,
         otherCountryId: otherCountry._id,
         guildId: interaction.guildId,
         turn: turn.turn,
-        allianceName: allianceName,
       }
   
       addInteractionData({identifier: interaction.id, data: interactionArgs});
@@ -137,7 +134,7 @@ const ally: CommandTemplate = {
     }
 
     //pp cost
-    country.politicalPower -= 5;
+    country.politicalPower -= 10;
     await country.save();
 
     interaction.editReply(`proposition sent!`);
@@ -156,13 +153,7 @@ const ally: CommandTemplate = {
       description: "Nation you want to ally",
       type: ApplicationCommandOptionType.String,
     },
-    {
-      name: "alliance-name",
-      required: true,
-      description: "Name of this new alliance",
-      type: ApplicationCommandOptionType.String,
-    },
   ]
 };
 
-export default ally;
+export default peace;

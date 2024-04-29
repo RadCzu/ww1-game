@@ -4,6 +4,7 @@ const interactionData = new Map();
 function addInteractionData(data: {identifier: string, data: any}) {
 
   interactionData.set(data.identifier, data.data);
+  console.log(interactionData);
 }
 
 /**
@@ -11,7 +12,6 @@ function addInteractionData(data: {identifier: string, data: any}) {
  * 
  */
 function getInteractionData(identifier: string) {
-  console.log(`getting ${interactionData.get(identifier)}`);
   if(interactionData.get(identifier) !== undefined) {
     return interactionData.get(identifier);
   } else {

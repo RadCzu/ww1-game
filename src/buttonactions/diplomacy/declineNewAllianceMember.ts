@@ -8,58 +8,56 @@ import { ActionRow, ActionRowBuilder, ButtonBuilder, ButtonComponent, ButtonStyl
 import TurnCounterModel from "../../models/Turn";
 
 
-const declineAlliance: ButtonAction = {
-  name: "declineAlliance",
+const declineNewAllianceMember: ButtonAction = {
+  name: "declineNewAllianceMember",
   async execute(client, interaction, customId): Promise<void> {
     if(interaction.isRepliable()){
-      const cleanedId: string = customId.replace(/^declineAlliance/, '');
+      const cleanedId: string = customId.replace(/^declineNewAllianceMember/, '');
 
-      const { countryId, otherCountryId, guildId, turn, allianceName } = getInteractionData(cleanedId);
+      const {
+        otherCountryId,
+        guildId,
+        allianceId,
+        usedBy,
+      } = getInteractionData(cleanedId);
 
+    
       if(otherCountryId === null || otherCountryId === undefined)  {
         interaction.reply(
-          `Interaction already has been used`
+          `Interaction already has been finished`
+        );
+        return;
+      }
+    
+      const alliance = await AllianceModel.findById(allianceId);
+      if(!alliance) {
+        interaction.reply(
+          `Alliance no longer exists`
+        );
+        return;
+      }
+      const members = await CountryModel.find({_id: {$in: alliance.memberNationIds}});
+      if(members.every(member => member.userId != interaction.user.id)) {
+        interaction.reply(
+          `You are not a member of this alliance`
         );
         return;
       }
 
-      const turnCounter = await TurnCounterModel.findOne({guildId: guildId});
-
-      if(!turnCounter) {
+      const users: Array<string> = usedBy as Array<string>;
+      
+      if(users.includes(interaction.user.id)) {
         interaction.reply(
-          `No turn counter`
-        );
-        return;
-      }
-
-      if(turnCounter.turn != turn) {
-        deleteInteractionData(cleanedId);
-        interaction.reply(
-          `Proposition deadline expired on turn ${turn}, it is now turn ${turnCounter.turn}`
-        );
-        return;
-      }
-  
-      const country = await CountryModel.findById(otherCountryId);
-      if(!country) {
-        interaction.reply(
-          `Your country no longer exists`
-        );
-        return;
-      }
-
-      if(interaction.user.id != country.userId) {
-        interaction.reply(
-          `Not your country`
+          `You have already replied to this interaction`
         );
         return;
       }
 
       deleteInteractionData(cleanedId);
 
-      interaction.reply(`Offer declined`);
+      interaction.reply(`Proposition rejected by ${interaction.user}`);
     }
   },
 }
 
-export default declineAlliance
+export default declineNewAllianceMember

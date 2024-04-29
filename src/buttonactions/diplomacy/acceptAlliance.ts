@@ -39,6 +39,7 @@ const acceptAlliance: ButtonAction = {
       }
 
       if(turnCounter.turn != turn) {
+        deleteInteractionData(cleanedId);
         interaction.reply(
           `Alliance deadline expired, it is now turn ${turnCounter.turn}`
         );

@@ -7,3 +7,4 @@ export * from "./buildindustry";
 export * from "./convertindustry";
 export * from "./retreat";
 export * from "./moveUnit";
+export * from "./peace";
